@@ -324,3 +324,6 @@ These findings come from the whole dashboard with no slicer selected, covering a
 - Annual figures are counts by diagnosis year and are not adjusted for population size or referral volume.
 - Treatment, symptoms, gender and laterality are in the model but not yet featured in the dashboard visuals.
 - This is an analytical portfolio project, not a clinical decision tool.
+
+  ## Published on PowerBI Services
+  https://app.powerbi.com/view?r=eyJrIjoiZDU5ZGE0M2YtZjk2ZS00YTE4LTg5YjItZTRhMzkxM2EwMjJlIiwidCI6IjQ4NTkyZTczLTE2OTUtNGVmMy1hYzg3LWM0ZDNjMGVhNDYzMyJ9
