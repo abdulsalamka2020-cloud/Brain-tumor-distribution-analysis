@@ -76,61 +76,92 @@ The model has two data tables plus a measures table:
 
 ## Measures Created
 
-<!-- Replace the DAX below with your exact formulas and table names if they differ. -->
 
 **Avg Intake py**
 The average number of patients diagnosed per year for the current selection. It is the total patient count divided by the number of distinct diagnosis years, so it responds to the grade and confirmation slicers.
 
 ```DAX
-Avg Intake py =
-DIVIDE (
-    COUNTROWS ( 'Brain Tumor Data' ),
-    DISTINCTCOUNT ( 'Brain Tumor Data'[Diagnosis Year] )
-)
-```
+Avg Intake py = 
+VAR _StartYear =
+    YEAR ( MIN ( 'Brain Tumor Data'[Date of Diagnosis] ) )
+VAR _EndYear =
+    YEAR ( MAX ( 'Brain Tumor Data'[Date of Diagnosis] ) )
+VAR _NumYears = _EndYear - _StartYear + 1
+
+VAR _TotalPatients =
+    CALCULATE ( COUNTROWS ( 'Brain Tumor Data' ) )
+
+RETURN
+    DIVIDE ( _TotalPatients, _NumYears )
 
 **vs Avg Intake py**
 A formatted text version of the yearly average that sits under the Total Patients KPI and carries a directional arrow, giving a quick sense of the typical annual caseload for the selection.
 
-**MABR (Most Affected Brain Region)**
-Returns the brain region with the highest patient count and its share of the current selection, for example `Pituitary (24%)`.
-
-```DAX
-MABR =
-VAR RegionCounts =
-    ADDCOLUMNS (
-        VALUES ( 'Brain Tumor Data'[Affected Brain Region] ),
-        "@Patients", CALCULATE ( COUNTROWS ( 'Brain Tumor Data' ) )
+VAR _CurrentIntake =
+    [Avg Intake py]
+VAR _OverallIntake =
+    CALCULATE (
+        [Avg Intake py],
+        ALL ( 'Brain Tumor Data' )
     )
-VAR TopRegion = TOPN ( 1, RegionCounts, [@Patients], DESC )
+VAR _Diff = _CurrentIntake - _OverallIntake
+
 RETURN
-    MAXX ( TopRegion, 'Brain Tumor Data'[Affected Brain Region] )
-        & " ("
-        & FORMAT (
-            DIVIDE ( MAXX ( TopRegion, [@Patients] ), COUNTROWS ( 'Brain Tumor Data' ) ),
-            "0%"
-          )
-        & ")"
-```
+    SWITCH (
+        TRUE(),
+        _Diff > 0, UNICHAR(9650) & " " & FORMAT(_CurrentIntake, "0.0"),
+        _Diff < 0, UNICHAR(9660) & " " & FORMAT(_CurrentIntake, "0.0"),
+        FORMAT(_CurrentIntake, "0.0")
+    )
+
+
+**MABR (Most Affected Brain Region)**
+VAR TotalPatients = COUNTROWS('Brain Tumor Data')
+VAR RegionCounts =
+    SUMMARIZE(
+        'Brain Tumor Data',
+        'Brain Tumor Data'[Affected Brain Region],
+        "Cnt", COUNTROWS('Brain Tumor Data')
+    )
+VAR TopRegion = TOPN(1, RegionCounts, [Cnt], DESC)
+VAR RegionName = MAXX(TopRegion, 'Brain Tumor Data'[Affected Brain Region])
+VAR RegionCount = MAXX(TopRegion, [Cnt])
+
+RETURN
+RegionName & " (" & FORMAT(DIVIDE(RegionCount, TotalPatients), "0%") & ")"
+
 
 **Most Affected Age Group**
-Returns the age group with the most patients in the current selection, using the same top-one pattern as MABR.
+Returns the age group with the most patients in the current selection
+VAR AgeGroupCounts =
+    SUMMARIZE(
+        'Brain Tumor Data',
+        'Brain Tumor Data'[Age Group],
+        "PatientCount", DISTINCTCOUNT('Brain Tumor Data'[Patient ID])
+    )
+VAR TopGroup =
+    TOPN(1, AgeGroupCounts, [PatientCount], DESC)
+RETURN
+MAXX(TopGroup, 'Brain Tumor Data'[Age Group])
+
 
 **Age Group (calculated column)**
 
 ```DAX
-Age Group =
-SWITCH (
-    TRUE (),
-    'Brain Tumor Data'[Age] <= 10, "0-10",
-    'Brain Tumor Data'[Age] <= 20, "11-20",
-    'Brain Tumor Data'[Age] <= 30, "21-30",
-    'Brain Tumor Data'[Age] <= 40, "31-40",
-    'Brain Tumor Data'[Age] <= 50, "41-50",
-    'Brain Tumor Data'[Age] <= 60, "51-60",
-    "60+"
+VAR AgeValue = 'Brain Tumor Data'[Age]
+RETURN
+SWITCH(
+    TRUE(),
+    AgeValue >= 0 && AgeValue <= 10, "0-10",
+    AgeValue >= 11 && AgeValue <= 20, "11-20",
+    AgeValue >= 21 && AgeValue <= 30, "21-30",
+    AgeValue >= 31 && AgeValue <= 40, "31-40",
+    AgeValue >= 41 && AgeValue <= 50, "41-50",
+    AgeValue >= 51 && AgeValue <= 60, "51-60",
+    AgeValue > 60, "60+",
+    "Unknown"
 )
-```
+
 
 **Total Patients, Average Age and Average Tumor Size**
 Built from standard aggregations: a row count of patients, the average of `Age`, and the average of `Tumor Size (cm)`.
