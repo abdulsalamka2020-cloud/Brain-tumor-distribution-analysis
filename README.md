@@ -161,13 +161,12 @@ SWITCH(
     AgeValue > 60, "60+",
     "Unknown"
 )
-
+```
 
 **Total Patients, Average Age and Average Tumor Size**
-Built from standard aggregations: a row count of patients, the average of `Age`, and the average of `Tumor Size (cm)`.
+Built from standard aggregations: a row count of patients, the average of `Age`, and the average of `Tumor Size (cm)`
 
 ---
-
 ## Dashboard Design
 
 - **Header and KPI strip:** Total Patients, Average Age and Average Tumor Size, each with a sparkline and a supporting line (average yearly intake, most affected age group, most affected brain region)
